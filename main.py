@@ -8,6 +8,7 @@ class Application(Frame):
         self.master = master
         
         self.master.title("DB Stuff")
+        self.master.geometry('400x300')
         
         #Set up the grid for the Widgets
         self.grid(column=0, row=0, sticky=(N,W,E,S))
@@ -20,8 +21,12 @@ class Application(Frame):
         self.materials = ("plank", "hammer", "wood", "nail", "asdf", "hammer", "wood", "nail")
         self.materialsString = StringVar(value=self.materials)
         
-        self.selectedProduct = StringVar()
-        self.selectedMaterial = StringVar()
+        #self.selectedProduct = StringVar()
+        #self.selectedProduct.set('')
+        #self.selectedMaterial = StringVar()
+        #self.selectedMaterial.set('')
+        
+        self.possibleProducts = ["table", "lamp", "tv", "car", "apple", "asdf", "book", "cake"]
         
         self.pack()
         self.createWidgets()
@@ -42,8 +47,28 @@ class Application(Frame):
         
         quitBtn = ttk.Button(self, text="QUIT", command=self.master.destroy)
         
-        selProd = ttk.Label(self, textvariable=self.selectedProduct, anchor="center")
-        selMat = ttk.Label(self, textvariable=self.selectedMaterial, anchor="center")
+        #selProd = ttk.Label(self, textvariable=self.selectedProduct)#, anchor="center")
+        #selMat = ttk.Label(self, textvariable=self.selectedMaterial)#, anchor="center")
+        
+        dropdownLbl = ttk.Label(self, text="Select a Product to Add!")
+        
+        var = StringVar(self.master)
+        dropdown = ttk.OptionMenu(self, var, "<Product>", *self.possibleProducts)
+        
+        def optionSelected(*args):
+            #Add a product to the product listbox
+            prods = list(self.products) + [var.get()]
+            prods = tuple(prods)
+            self.productsString.set(prods)
+            self.products = prods
+            
+            #Then add its materials to the material listbox
+            mats = list(self.materials) + ["wood", "cardboard", "fire"]
+            mats = tuple(mats)
+            self.materialsString.set(mats)
+            self.materials = mats
+        
+        var.trace("w", optionSelected)
         
         #Set up the widget's location in the GUI
         productLbl.grid(column=0, row=0, pady=5)
@@ -56,8 +81,11 @@ class Application(Frame):
         
         quitBtn.grid(column=0, row=4, pady=10)
         
-        selProd.grid(column=2, row=1, padx=5, sticky=(W,E))
-        selMat.grid(column=2, row=3, padx=5, sticky=(W,E))
+        dropdownLbl.grid(column=2, row=0)
+        dropdown.grid(column=2, row=1)
+        
+        #selProd.grid(column=2, row=1, padx=5)#, sticky=(W,E))
+        #selMat.grid(column=2, row=3, padx=5)#, sticky=(W,E))
 
         # Colorize alternating lines of the listboxes
         for i in range(0,len(self.products),2):
@@ -65,7 +93,7 @@ class Application(Frame):
         for i in range(0,len(self.materials),2):
             materials.itemconfigure(i, background='#f0f0ff')
             
-            
+        """   
         #Then bind some functions to the listboxes just cause
         def selectedProduct(*args):
             idxs = products.curselection()
@@ -80,11 +108,12 @@ class Application(Frame):
             
         products.bind('<<ListboxSelect>>', selectedProduct)
         materials.bind('<<ListboxSelect>>', selectedMaterial)
-        
+        """
 def main():
     root = Tk()
     app = Application(master=root)
     app.mainloop()
     
 main()
+
 
