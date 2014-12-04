@@ -50,7 +50,7 @@ class Application(Frame):
             idxs = self.productListBox.curselection()
             if (len(idxs) == 1):
                 prods = list(self.products)
-                del prods[idxs[0]]
+                del prods[int(idxs[0])]
                     
                 prods = tuple(prods)
                 self.productsString.set(prods)
