@@ -18,7 +18,7 @@ class Application(Frame):
         
         self.master.title("DB Stuff")
         self.master.geometry('500x300')
-		
+        
         Controller.setup()
         
         #Set up the grid for the Widgets
@@ -52,7 +52,7 @@ class Application(Frame):
         
         def removeProduct(*args):
             idxs = self.productListBox.curselection()
-			
+            
             if (len(idxs) == 1):
                 prods = list(self.products)
                 del prods[int(idxs[0])]
@@ -98,7 +98,7 @@ class Application(Frame):
         dropdown = ttk.OptionMenu(self, selectedProductVar, "<Product>", *self.possibleProducts)
         
         def addProduct(*args):
-			Controller.AddProduct(123,123)
+            Controller.AddProduct(123,123)
             if (selectedProductVar.get() != "<Product>"):
                 #Add a product to the product listbox
                 prods = list(self.products) + [selectedProductVar.get()]
@@ -168,7 +168,7 @@ def main():
     root = Tk()
     app = Application(master=root)
     app.mainloop()
-	Controller.tearDown()
+    Controller.tearDown()
     
 main()
 
