@@ -18,6 +18,8 @@ class Application(Frame):
         
         self.master.title("DB Stuff")
         self.master.geometry('500x300')
+		
+        Controller.setup()
         
         #Set up the grid for the Widgets
         self.grid(column=0, row=0, sticky=(N,W,E,S))
@@ -96,6 +98,7 @@ class Application(Frame):
         dropdown = ttk.OptionMenu(self, selectedProductVar, "<Product>", *self.possibleProducts)
         
         def addProduct(*args):
+			Controller.AddProduct(123,123)
             if (selectedProductVar.get() != "<Product>"):
                 #Add a product to the product listbox
                 prods = list(self.products) + [selectedProductVar.get()]
@@ -165,6 +168,7 @@ def main():
     root = Tk()
     app = Application(master=root)
     app.mainloop()
+	Controller.tearDown()
     
 main()
 
