@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter import ttk
 
+
 #Because multiple functions can be defined as a single object and this is needed for the scrollbar.
 def combine_funcs(*funcs):
     def combined_func(*args, **kwargs):
