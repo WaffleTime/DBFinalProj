@@ -28,7 +28,7 @@ def tearDown():
 setup()
 
 
-cursor.execute("SELECT * FROM Customer_T")
+cursor.execute("SELECT * FROM Product_T")
 
 #prints the filed descriptions
 print(cursor.description)
