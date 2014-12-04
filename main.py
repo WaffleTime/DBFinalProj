@@ -48,6 +48,7 @@ class Application(Frame):
         
         def removeProduct(*args):
             idxs = self.productListBox.curselection()
+			
             if (len(idxs) == 1):
                 prods = list(self.products)
                 del prods[idxs[0]]
