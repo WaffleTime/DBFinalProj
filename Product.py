@@ -1,3 +1,5 @@
+from Material import Material
+
 class Product(object):
 	def __init__(self, quantity):
 		self.quantity 	= quantity
@@ -13,4 +15,3 @@ class Product(object):
 		This returns the primarykey of the product.
 		"""
 		pass
-		
