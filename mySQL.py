@@ -12,7 +12,7 @@ def setup():
 	global cnx
 	global cursor
 
-	cnx = pymysql.connect(user='fcm', host='isoptera.lcsc.edu', password = "cs480fcm", database='cs445')
+	cnx = pymysql.connect(user='CS', host='isoptera.lcsc.edu', password = "cs445", database='cs445')
 	print("Databse Connected")
 	cursor = cnx.cursor()
 	
