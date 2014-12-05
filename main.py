@@ -1,4 +1,5 @@
 from tkinter import *
+import tkinter.font as tkFont
 from tkinter import ttk
 from Controller import Controller
 
@@ -9,6 +10,35 @@ def combine_funcs(*funcs):
         for f in funcs:
             f(*args, **kwargs)
     return combined_func
+    
+def sortby(tree, col, descending):
+    """sort tree contents when a column header is clicked on"""
+    # grab values to sort
+    data = [(tree.set(child, col), child) \
+        for child in tree.get_children('')]
+    # if the data to be sorted is numeric change to float
+    #data =  change_numeric(data)
+    # now sort the data in place
+    data.sort(reverse=descending)
+    for ix, item in enumerate(data):
+        tree.move(item[1], '', ix)
+    # switch the heading so it will sort in the opposite direction
+    tree.heading(col, command=lambda col=col: sortby(tree, col, \
+        int(not descending)))
+        
+def updateTableHeader(table, header, colWidths):
+    for i in range(len(header)):
+        table.heading(header[i], text=header[i].title(), command=lambda c=header[i]: sortby(table, c, 0))
+        table.column(header[i], width=tkFont.Font().measure(header[i].title()))
+        colWidths[i] = tkFont.Font().measure(header[i].title())
+        
+def AdjustColumnWidths(table, header, colWidths, newItem):
+    for ix, val in enumerate(newItem):
+        col_w = tkFont.Font().measure(val)
+        if (colWidths[ix] < col_w):
+            table.column(header[ix], width=col_w)
+            colWidths[ix] = col_w
+        
 
 class Application(Frame):
     def __init__(self, master=None):
@@ -17,27 +47,29 @@ class Application(Frame):
         self.master = master
         
         self.master.title("DB Stuff")
-        self.master.geometry('500x300')
+        self.master.geometry('1000x700')
         
-        Controller.setup()
+        Controller.Setup()
         
         #Set up the grid for the Widgets
         self.grid(column=0, row=0, sticky=(N,W,E,S))
         self.master.grid_columnconfigure(0,weight=1)
         self.master.grid_rowconfigure(0,weight=1)
         
-        self.products = ("table", "lamp", "tv", "car", "apple", "asdf", "book")
-        self.productsString = StringVar(value=self.products)
+        self.productTable = None
+        self.productHeader = ["name", "quantity"]
+        self.productColWidth = [0, 0]
         
-        self.materials = ("plank", "hammer", "wood", "nail", "asdf", "hammer", "wood", "nail")
-        self.materialsString = StringVar(value=self.materials)
+        self.possibleProductIds, self.possibleProductNames = Controller.GetPossibleProducts()
         
-        #self.selectedProduct = StringVar()
-        #self.selectedProduct.set('')
-        #self.selectedMaterial = StringVar()
-        #self.selectedMaterial.set('')
+        self.materialTable = None
+        self.materialHeader = ["name", "vendor", "unit cost", "quantity"]
+        self.materialColWidth = [0, 0, 0, 0]
         
-        self.possibleProducts = ["table", "lamp", "tv", "car", "apple", "asdf", "book", "cake"]
+        #A dictionary mapping the products' iids for the self.productTable TreeView to possibly several
+        #   materials' iids in the self.materialTable TreeView.
+        #{prodiid:[matiid, matiid, ...]}
+        self.productToMaterials = {}
         
         self.pack()
         self.createWidgets()
@@ -45,130 +77,99 @@ class Application(Frame):
     def createWidgets(self):
         #Create all of the widgets that we will be using.
         productLbl = ttk.Label(self, text="Products")
-        self.productListBox = Listbox(self, listvariable=self.productsString, height=5)
         
-        prodSB = ttk.Scrollbar(self, orient=VERTICAL, command=self.productListBox.yview)
-        self.productListBox["yscrollcommand"] = prodSB.set
+        self.productTable = ttk.Treeview(self, columns=self.productHeader, show="headings")
+        prodvsb = ttk.Scrollbar(self, orient="vertical", command=self.productTable.yview)
+        prodhsb = ttk.Scrollbar(self, orient="horizontal", command=self.productTable.xview)
+        self.productTable.configure(yscrollcommand=prodvsb.set, xscrollcommand=prodhsb.set)
         
         def removeProduct(*args):
-            idxs = self.productListBox.curselection()
-            
-            if (len(idxs) == 1):
-                prods = list(self.products)
-                del prods[int(idxs[0])]
-                    
-                prods = tuple(prods)
-                self.productsString.set(prods)
-                self.products = prods
+            selitems = self.productTable.selection()
+            for prodiid in selitems:
+                for matiid in self.productToMaterials.get(prodiid, []):
+                    self.materialTable.delete(matiid)
                 
-                #Materials also need to be removed along with these products!
-                
-                self.updateListBoxes()
+                self.productTable.delete(prodiid)
                 
         def removeAllProducts(*args):
-            prods = ()
-            self.productsString.set(prods)
-            self.products = prods
-
-            mats = ()
-            self.materialsString.set(mats)
-            self.materials = mats
-            
-            self.updateListBoxes()
+            for i in range(len(self.productTable.get_children())-1,-1,-1):
+                self.productTable.delete(self.productTable.get_children()[i])
+                
+            for i in range(len(self.materialTable.get_children())-1,-1,-1):
+                self.materialTable.delete(self.materialTable.get_children()[i])
         
         removeProductBtn = ttk.Button(self, text="Remove Product", command=removeProduct)
         removeAllProductsBtn = ttk.Button(self, text="Remove All Products", command=removeAllProducts)
         
         materialLbl = ttk.Label(self, text="Materials")
-        self.materialListBox1 = Listbox(self, listvariable=self.materialsString, height=5)
-        self.materialListBox2 = Listbox(self, listvariable=self.materialsString, height=5)
-        
-        matSB = ttk.Scrollbar(self, orient=VERTICAL, command=combine_funcs(self.materialListBox1.yview, self.materialListBox2.yview))
-        self.materialListBox1["yscrollcommand"] = matSB.set
-        self.materialListBox2["yscrollcommand"] = matSB.set
+        self.materialTable = ttk.Treeview(self, columns=self.materialHeader, show="headings")
+        matvsb = ttk.Scrollbar(self, orient="vertical", command=self.materialTable.yview)
+        mathsb = ttk.Scrollbar(self, orient="horizontal", command=self.materialTable.xview)
+        self.materialTable.configure(yscrollcommand=matvsb.set, xscrollcommand=mathsb.set)
         
         quitBtn = ttk.Button(self, text="QUIT", command=self.master.destroy)
-        
-        #selProd = ttk.Label(self, textvariable=self.selectedProduct)#, anchor="center")
-        #selMat = ttk.Label(self, textvariable=self.selectedMaterial)#, anchor="center")
         
         dropdownLbl = ttk.Label(self, text="Select a Product to Add!")
         
         selectedProductVar = StringVar(self.master)
-        dropdown = ttk.OptionMenu(self, selectedProductVar, "<Product>", *self.possibleProducts)
+        dropdown = ttk.OptionMenu(self, selectedProductVar, "<Product>", *self.possibleProductNames)
         
         def addProduct(*args):
-            Controller.AddProduct(123,123)
             if (selectedProductVar.get() != "<Product>"):
-                #Add a product to the product listbox
-                prods = list(self.products) + [selectedProductVar.get()]
-                prods = tuple(prods)
-                self.productsString.set(prods)
-                self.products = prods
+                indx = self.possibleProductNames.index(selectedProductVar.get())
+                product = Controller.AddProduct(self.possibleProductIds[indx], 1)
                 
-                #Then add its materials to the material listbox
-                mats = list(self.materials) + ["wood", "cardboard", "fire"]
-                mats = tuple(mats)
-                self.materialsString.set(mats)
-                self.materials = mats
+                newProd = (product.columnInfo["ProductDescription"], product.quantity)
                 
-                self.updateListBoxes()
-        
+                #First check to see if the product and its materials exist already!
+                #There should only be 1 instance of each product and material in the tables.
+                self.productTable.insert("", "end", iid=product.PK, values=newProd)
+                
+                AdjustColumnWidths(self.productTable, self.productHeader, self.productColWidth, newProd)
+                
+                for mat in product.materials:
+                    newMat = (mat.name, mat.vendor, mat.unitCost, mat.quantity)
+                    self.materialTable.insert("", "end", iid=mat.PK, values=newMat)
+                    
+                    AdjustColumnWidths(self.materialTable, self.materialHeader, self.materialColWidth, newMat)
+                    
+                    materialList = self.productToMaterials.get(product.PK, [])
+                    materialList += mat.PK
+                    self.productToMaterials[product.PK] = materialList
+                    
         addProductBtn = ttk.Button(self, text="Add Product", command=addProduct)
         
         #Set up the widget's location in the GUI
         productLbl.grid(column=0, row=0, pady=5)
-        self.productListBox.grid(column=0, row=1, columnspan=2, stick=(N,S,E,W))
-        prodSB.grid(column=2, row=1, sticky=(N,S))
+        self.productTable.grid(column=0, row=1, columnspan=4, stick=(N,S,E,W))
+        prodvsb.grid(column=2, row=1, sticky="ns")
+        prodhsb.grid(column=0, row=2, columnspan=4, sticky="ew")
         
-        removeProductBtn.grid(column=0, row=2)
-        removeAllProductsBtn.grid(column=1, row=2)
+        removeProductBtn.grid(column=0, row=4)
+        removeAllProductsBtn.grid(column=0, row=5)
         
-        materialLbl.grid(column=0, row=3, pady=5)
-        self.materialListBox1.grid(column=0, row=4, stick=(N,S,E,W))
-        self.materialListBox2.grid(column=1, row=4, stick=(N,S,E,W))
-        matSB.grid(column=2, row=4, sticky=(N,S))
+        dropdownLbl.grid(column=1, row=3)
+        dropdown.grid(column=1, row=4)
+        addProductBtn.grid(column=1, row=5)
         
-        quitBtn.grid(column=0, row=5, pady=10)
+        materialLbl.grid(column=0, row=6, pady=6)
+        self.materialTable.grid(column=0, row=7, columnspan=4, stick=(N,S,E,W))
+        matvsb.grid(column=2, row=7, sticky="ns")
+        mathsb.grid(column=0, row=8, columnspan=4, sticky="ew")
         
-        dropdownLbl.grid(column=3, row=0)
-        dropdown.grid(column=3, row=1)
-        addProductBtn.grid(column=3, row=2)
+        quitBtn.grid(column=0, row=9, pady=10)
         
-        self.updateListBoxes()
-
+        self.columnconfigure(0, minsize=300)
+        self.columnconfigure(1, minsize=300)
         
-            
-        """   
-        #Then bind some functions to the listboxes just cause
-        def selectedProduct(*args):
-            idxs = products.curselection()
-            if len(idxs)==1:
-                self.selectedProduct.set(self.products[idxs[0]])
-            
-        def selectedMaterial(*args):
-            idxs = materials.curselection()
-            if len(idxs)==1:
-                self.selectedMaterial.set(self.materials[idxs[0]])
-            
-            
-        products.bind('<<ListboxSelect>>', selectedProduct)
-        materials.bind('<<ListboxSelect>>', selectedMaterial)
-        """
+        updateTableHeader(self.productTable, self.productHeader, self.productColWidth)
+        updateTableHeader(self.materialTable, self.materialHeader, self.materialColWidth)
         
-    def updateListBoxes(self):
-        # Colorize alternating lines of the listboxes
-        for i in range(0,len(self.products),2):
-            self.productListBox.itemconfigure(i, background='#f0f0ff')
-        for i in range(0,len(self.materials),2):
-            self.materialListBox1.itemconfigure(i, background='#f0f0ff')
-        for i in range(0,len(self.materials),2):
-            self.materialListBox2.itemconfigure(i, background='#f0f0ff')
 def main():
     root = Tk()
     app = Application(master=root)
     app.mainloop()
-    Controller.tearDown()
+    Controller.TearDown()
     
 main()
 
