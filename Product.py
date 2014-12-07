@@ -29,6 +29,7 @@ class Product(object):
             for i in range(len(columnNames)):
                 self.columnInfo[columnNames[i]] = columnValues[i]
                 
+        #Remove this when Controller.AddProduct() is finished
         self.AddMaterial(str(random.randint(0,100)), "test", "5", "Albertsons", "500000")
                 
         return success

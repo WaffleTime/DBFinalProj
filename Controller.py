@@ -55,12 +55,8 @@ class Controller(object):
     @classmethod
     def GetProduct(cls, productPK):
         product = None
-        print(cls.pendingProducts)
         for i in range(len(cls.pendingProducts)):
-            print("'%s'      '%s'"%(cls.pendingProducts[i].PK, productPK))
-            print(cls.pendingProducts[i].PK == productPK)
             if (int(cls.pendingProducts[i].PK) == int(productPK)):
-                print("asdfasdf")
                 product = cls.pendingProducts[i]
                 break
                 
@@ -101,6 +97,7 @@ class Controller(object):
             for column in cls.cursor.description:
                 columnNames.append(column[0])
                 
+            #Add those columns to the Product object!
             if (not product.AddColumns(columnNames, list(cls.cursor)[0])):
                 print("AddColumns failed within Controller.AddProduct!")
             

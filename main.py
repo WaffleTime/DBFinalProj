@@ -66,11 +66,6 @@ class Application(Frame):
         self.materialHeader = ["name", "vendor", "unit cost", "quantity"]
         self.materialColWidth = [0, 0, 0, 0]
         
-        #A dictionary mapping the products' iids for the self.productTable TreeView to possibly several
-        #   materials' iids in the self.materialTable TreeView.
-        #{prodiid:[matiid, matiid, ...]}
-        self.productToMaterials = {}
-        
         self.pack()
         self.createWidgets()
 
@@ -86,9 +81,6 @@ class Application(Frame):
         def removeProduct(*args):
             selitems = self.productTable.selection()
             for prodiid in selitems:
-                #print(prodiid)
-                #print(self.productTable.item(prodiid))
-                #print(self.productTable.item(prodiid)["tags"][0])
                 product = Controller.GetProduct(prodiid)
                 
                 for material in product.materials:
@@ -140,10 +132,9 @@ class Application(Frame):
                     
                     AdjustColumnWidths(self.materialTable, self.materialHeader, self.materialColWidth, newMat)
                     
-                    #materialList = self.productToMaterials.get(product.PK, [])
-                    #materialList += mat.PK
-                    #self.productToMaterials[product.PK] = materialList
-                    
+                sortby(self.productTable, self.productHeader[0], False)
+                sortby(self.materialTable, self.materialHeader[0], False)
+                
         addProductBtn = ttk.Button(self, text="Add Product", command=addProduct)
         
         #Set up the widget's location in the GUI
