@@ -34,20 +34,50 @@ class Controller(object):
         productNames    = []
         
         for row in cls.cursor:
-            if (row[0] != None and row[2] != None):
-                productIds.append(row[0])
-                productNames.append(row[2])
+            if (row[0] != None and row[2] != None and row[3] != None):
+                if (len(productIds) == 0):
+                    productIds.append(row[0])
+                    productNames.append("%s-%s"%(row[2], row[3]))
+                else:
+                    for i in range(len(productIds)):
+                        productName = "%s-%s"%(row[2], row[3])
+                        if (productName < productNames[i]):
+                            productIds.insert(i, row[0])
+                            productNames.insert(i, productName)
+                            break
+                        elif (i == len(productIds)):
+                            productIds.append(row[0])
+                            productNames.append(productName)
+                            break
             
         return productIds, productNames
         
     @classmethod
     def GetProduct(cls, productPK):
         product = None
+        print(cls.pendingProducts)
         for i in range(len(cls.pendingProducts)):
-            if (cls.pendingProducts[i].PK == productPK):
+            print("'%s'      '%s'"%(cls.pendingProducts[i].PK, productPK))
+            print(cls.pendingProducts[i].PK == productPK)
+            if (int(cls.pendingProducts[i].PK) == int(productPK)):
+                print("asdfasdf")
                 product = cls.pendingProducts[i]
+                break
                 
         return product
+        
+    @classmethod
+    def RemoveProduct(cls, productPK):
+        """
+        This subtracts from a product's quantity until the quantity is zero. Then
+        the product is removed entirely.
+        """
+        for i in range(len(cls.pendingProducts)):
+            if (cls.pendingProducts[i].PK == productPK):
+                if (cls.pendingProducts[i].quantity == 1):
+                    del cls.pendingProducts[i]
+                else:
+                    cls.pendingProducts[i].quantity -= 1
         
     @classmethod
     def AddProduct(cls, productPK, quantity):
@@ -75,6 +105,13 @@ class Controller(object):
                 print("AddColumns failed within Controller.AddProduct!")
             
             #Query vendors and materials and add that info to the product.
+            #...
+            #...
+            #...
+            #...
+            #...
+            
+            cls.pendingProducts.append(product)
         else:
             product.quantity += quantity
         

@@ -57,8 +57,8 @@ class Application(Frame):
         self.master.grid_rowconfigure(0,weight=1)
         
         self.productTable = None
-        self.productHeader = ["name", "quantity"]
-        self.productColWidth = [0, 0]
+        self.productHeader = ["name", "finish", "quantity"]
+        self.productColWidth = [0, 0, 0]
         
         self.possibleProductIds, self.possibleProductNames = Controller.GetPossibleProducts()
         
@@ -86,10 +86,17 @@ class Application(Frame):
         def removeProduct(*args):
             selitems = self.productTable.selection()
             for prodiid in selitems:
-                for matiid in self.productToMaterials.get(prodiid, []):
-                    self.materialTable.delete(matiid)
+                #print(prodiid)
+                #print(self.productTable.item(prodiid))
+                #print(self.productTable.item(prodiid)["tags"][0])
+                product = Controller.GetProduct(prodiid)
+                
+                for material in product.materials:
+                    self.materialTable.delete(material.PK)
                 
                 self.productTable.delete(prodiid)
+                #This just subtracts from the quantity if more than 1 exists.
+                Controller.RemoveProduct(prodiid)
                 
         def removeAllProducts(*args):
             for i in range(len(self.productTable.get_children())-1,-1,-1):
@@ -119,7 +126,7 @@ class Application(Frame):
                 indx = self.possibleProductNames.index(selectedProductVar.get())
                 product = Controller.AddProduct(self.possibleProductIds[indx], 1)
                 
-                newProd = (product.columnInfo["ProductDescription"], product.quantity)
+                newProd = (product.columnInfo["ProductDescription"], product.columnInfo["ProductFinish"], product.quantity)
                 
                 #First check to see if the product and its materials exist already!
                 #There should only be 1 instance of each product and material in the tables.
@@ -133,9 +140,9 @@ class Application(Frame):
                     
                     AdjustColumnWidths(self.materialTable, self.materialHeader, self.materialColWidth, newMat)
                     
-                    materialList = self.productToMaterials.get(product.PK, [])
-                    materialList += mat.PK
-                    self.productToMaterials[product.PK] = materialList
+                    #materialList = self.productToMaterials.get(product.PK, [])
+                    #materialList += mat.PK
+                    #self.productToMaterials[product.PK] = materialList
                     
         addProductBtn = ttk.Button(self, text="Add Product", command=addProduct)
         

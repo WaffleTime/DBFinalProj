@@ -1,4 +1,5 @@
 from Material import Material
+import random
 
 class Product(object):
     def __init__(self, quantity):
@@ -24,8 +25,11 @@ class Product(object):
         
         if (len(columnNames) == len(columnValues)):
             success = True
+            self.PK = columnValues[0]
             for i in range(len(columnNames)):
                 self.columnInfo[columnNames[i]] = columnValues[i]
+                
+        self.AddMaterial(str(random.randint(0,100)), "test", "5", "Albertsons", "500000")
                 
         return success
         
