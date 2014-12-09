@@ -47,7 +47,7 @@ class Application(Frame):
         self.master = master
         
         self.master.title("DB Stuff")
-        self.master.geometry('1000x700')
+        self.master.geometry('900x760')
         
         Controller.Setup()
         
@@ -78,24 +78,62 @@ class Application(Frame):
         prodhsb = ttk.Scrollbar(self, orient="horizontal", command=self.productTable.xview)
         self.productTable.configure(yscrollcommand=prodvsb.set, xscrollcommand=prodhsb.set)
         
+        
+        totalCostHdrLbl = ttk.Label(self, text="Total Cost of Materials")
+        totalCostLbl = ttk.Label(self, text="$0.00")
+        
+        #This variable defines how much Products will be added/removed.
+        productNumber = IntVar()
+        productNumber.set(1)
+        
+        def updateTotalCost():
+            totalCost = 0.0
+            for prodiid in self.productTable.get_children():
+                product = Controller.GetProduct(prodiid)
+                    
+                for material in product.materials:
+                    totalCost += material.unitCost*material.quantity*product.quantity
+                
+            totalCostLbl["text"] = "$%0.2f"%(totalCost)
+        
         def removeProduct(*args):
             selitems = self.productTable.selection()
+            
+            #This is how many of each product we'll be removing!
+            amountToRemove = productNumber.get()
+            
             for prodiid in selitems:
-                product = Controller.GetProduct(prodiid)
-                
-                for material in product.materials:
-                    self.materialTable.delete(material.PK)
-                
-                self.productTable.delete(prodiid)
-                #This just subtracts from the quantity if more than 1 exists.
-                Controller.RemoveProduct(prodiid)
-                
+                if (self.productTable.exists(prodiid)):
+                    product = Controller.GetProduct(prodiid)
+                    
+                    for material in product.materials:
+                        if (product.quantity-amountToRemove > 0):
+                            newMat = (material.name, material.vendor, "$%f"%material.unitCost, (product.quantity-amountToRemove)*material.quantity)
+                            self.materialTable.item(material.PK, values=newMat)
+                        else:
+                            self.materialTable.delete(material.PK)
+
+                    #We should only be subtracting the product by 1 until there are no more. Then
+                    #   we'll delete the row.
+                    if (product.quantity-amountToRemove > 0):
+                        newProd = (product.columnInfo["ProductDescription"], product.columnInfo["ProductFinish"], product.quantity-amountToRemove)
+                        self.productTable.item(prodiid, values=newProd)
+                    else:
+                        self.productTable.delete(prodiid)
+                        
+                    #This just subtracts from the quantity if more than 1 exists.
+                    #Then it deletes the product obj for good if the quantity reaches 0.
+                    Controller.RemoveProduct(prodiid, productNumber.get())
+            
+            updateTotalCost()
         def removeAllProducts(*args):
             for i in range(len(self.productTable.get_children())-1,-1,-1):
                 self.productTable.delete(self.productTable.get_children()[i])
                 
             for i in range(len(self.materialTable.get_children())-1,-1,-1):
                 self.materialTable.delete(self.materialTable.get_children()[i])
+                
+            updateTotalCost()
         
         removeProductBtn = ttk.Button(self, text="Remove Product", command=removeProduct)
         removeAllProductsBtn = ttk.Button(self, text="Remove All Products", command=removeAllProducts)
@@ -113,52 +151,81 @@ class Application(Frame):
         selectedProductVar = StringVar(self.master)
         dropdown = ttk.OptionMenu(self, selectedProductVar, "<Product>", *self.possibleProductNames)
         
+        
+        productNumberHeaderLbl = ttk.Label(self, text="Change the Number of Products to Add/Remove!")
+        
+        def intOnly(*args):
+            productNumber.set(round(productNumber.get()))
+        
+        productNumberSlider = ttk.Scale(self, orient=HORIZONTAL, length=300, from_=1.0, to=50.0, variable=productNumber, command=intOnly)
+        
+        productNumberLbl = ttk.Label(self, textvariable=productNumber)
+        productNumberLbl["text"] = 1
+        
         def addProduct(*args):
             if (selectedProductVar.get() != "<Product>"):
                 indx = self.possibleProductNames.index(selectedProductVar.get())
-                product = Controller.AddProduct(self.possibleProductIds[indx], 1)
+                product = Controller.AddProduct(self.possibleProductIds[indx], productNumber.get())
                 
                 newProd = (product.columnInfo["ProductDescription"], product.columnInfo["ProductFinish"], product.quantity)
                 
                 #First check to see if the product and its materials exist already!
                 #There should only be 1 instance of each product and material in the tables.
-                self.productTable.insert("", "end", iid=product.PK, values=newProd)
+                if (self.productTable.exists(product.PK)):
+                    self.productTable.item(product.PK, values=newProd)
+                else:
+                    self.productTable.insert("", "end", iid=product.PK, values=newProd)
                 
                 AdjustColumnWidths(self.productTable, self.productHeader, self.productColWidth, newProd)
                 
                 for mat in product.materials:
-                    newMat = (mat.name, mat.vendor, mat.unitCost, mat.quantity)
-                    self.materialTable.insert("", "end", iid=mat.PK, values=newMat)
+                    newMat = (mat.name, mat.vendor, "$%f"%mat.unitCost, product.quantity*mat.quantity)
+                    if (self.materialTable.exists(mat.PK)):
+                        self.materialTable.item(mat.PK, values=newMat)
+                    else:
+                        self.materialTable.insert("", "end", iid=mat.PK, values=newMat)
                     
                     AdjustColumnWidths(self.materialTable, self.materialHeader, self.materialColWidth, newMat)
                     
+                
                 sortby(self.productTable, self.productHeader[0], False)
                 sortby(self.materialTable, self.materialHeader[0], False)
-                
+            
+            updateTotalCost()
+            
         addProductBtn = ttk.Button(self, text="Add Product", command=addProduct)
         
         #Set up the widget's location in the GUI
-        productLbl.grid(column=0, row=0, pady=5)
+        productLbl.grid(column=0, row=0, pady=10)
         self.productTable.grid(column=0, row=1, columnspan=4, stick=(N,S,E,W))
-        prodvsb.grid(column=2, row=1, sticky="ns")
+        prodvsb.grid(column=4, row=1, sticky="ns")
         prodhsb.grid(column=0, row=2, columnspan=4, sticky="ew")
         
-        removeProductBtn.grid(column=0, row=4)
-        removeAllProductsBtn.grid(column=0, row=5)
+        removeProductBtn.grid(column=0, row=3, pady=10)
+        removeAllProductsBtn.grid(column=0, row=4)
         
-        dropdownLbl.grid(column=1, row=3)
-        dropdown.grid(column=1, row=4)
-        addProductBtn.grid(column=1, row=5)
+        dropdownLbl.grid(column=3, row=3, pady=10)
+        dropdown.grid(column=3, row=4)
+        addProductBtn.grid(column=3, row=5)
         
-        materialLbl.grid(column=0, row=6, pady=6)
+        productNumberHeaderLbl.grid(column=1, row=3, columnspan=2, pady=10)
+        productNumberSlider.grid(column=1, row=4, pady=10, padx=50, columnspan=2)
+        productNumberLbl.grid(column=1,row=5, columnspan=2)
+        
+        materialLbl.grid(column=0, row=6, pady=10)
         self.materialTable.grid(column=0, row=7, columnspan=4, stick=(N,S,E,W))
-        matvsb.grid(column=2, row=7, sticky="ns")
+        matvsb.grid(column=4, row=7, sticky="ns")
         mathsb.grid(column=0, row=8, columnspan=4, sticky="ew")
         
-        quitBtn.grid(column=0, row=9, pady=10)
+        quitBtn.grid(column=0, row=10)
         
-        self.columnconfigure(0, minsize=300)
-        self.columnconfigure(1, minsize=300)
+        totalCostHdrLbl.grid(column=1, row=9, pady=10)
+        totalCostLbl.grid(column=1, row=10)
+        
+        self.columnconfigure(0, minsize=120)
+        self.columnconfigure(1, minsize=120)
+        self.columnconfigure(2, minsize=120)
+        self.columnconfigure(3, minsize=120)
         
         updateTableHeader(self.productTable, self.productHeader, self.productColWidth)
         updateTableHeader(self.materialTable, self.materialHeader, self.materialColWidth)

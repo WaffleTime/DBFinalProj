@@ -56,24 +56,26 @@ class Controller(object):
     def GetProduct(cls, productPK):
         product = None
         for i in range(len(cls.pendingProducts)):
-            if (int(cls.pendingProducts[i].PK) == int(productPK)):
+            if (str(cls.pendingProducts[i].PK) == str(productPK)):
                 product = cls.pendingProducts[i]
                 break
                 
         return product
         
     @classmethod
-    def RemoveProduct(cls, productPK):
+    def RemoveProduct(cls, productPK, amountToRemove):
         """
         This subtracts from a product's quantity until the quantity is zero. Then
         the product is removed entirely.
         """
         for i in range(len(cls.pendingProducts)):
-            if (cls.pendingProducts[i].PK == productPK):
-                if (cls.pendingProducts[i].quantity == 1):
+            if (cls.pendingProducts[i].PK == int(productPK)):
+                if (cls.pendingProducts[i].quantity - amountToRemove <= 0):
                     del cls.pendingProducts[i]
+                    break
                 else:
-                    cls.pendingProducts[i].quantity -= 1
+                    cls.pendingProducts[i].quantity -= amountToRemove
+                    break
         
     @classmethod
     def AddProduct(cls, productPK, quantity):

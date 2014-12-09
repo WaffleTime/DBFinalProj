@@ -30,9 +30,22 @@ class Product(object):
                 self.columnInfo[columnNames[i]] = columnValues[i]
                 
         #Remove this when Controller.AddProduct() is finished
-        self.AddMaterial(str(random.randint(0,100)), "test", "5", "Albertsons", "500000")
-                
+        self.AddMaterial(str(random.randint(0,1000)), "test", 5, "Albertsons", 5.0)
+        #self.AddMaterial("5", "test", 5, "Albertsons", 500000)
+        
         return success
         
+    def GetMaterial(self, PK):
+        material = None
+        for mat in self.materials:
+            if (str(mat.PK) == str(PK)):
+                material = mat
+                
+        return material
+                
     def AddMaterial(self, PK, name, quantity, vendor, unitCost):
-        self.materials.append(Material(PK, name, quantity, vendor, unitCost))
+        material = self.GetMaterial(PK)
+        if (material == None):
+            self.materials.append(Material(PK, name, quantity, vendor, unitCost))
+        else:
+            material.quantity += quantity
