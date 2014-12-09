@@ -243,7 +243,14 @@ class Application(Frame):
             
         addProductBtn = ttk.Button(self, text="Add Product", command=addProduct)
         
-        submitionBtn = ttk.Button(self, text="Submit Order", command=Controller.SubmitProducts)
+        def submitOrder(*args):
+            success, exception = Controller.SubmitProducts()
+            if (success):
+                messagebox.showinfo("Completion", "The order for your products has been submitted!")
+            else:
+                messagebox.showwarning("Possible Problem", "The order was unable to be submitted!\n" + exception)
+        
+        submitionBtn = ttk.Button(self, text="Submit Order", command=submitOrder)
         
         #Set up the widget's location in the GUI
         productLbl.grid(column=0, row=0, pady=10)
