@@ -108,7 +108,7 @@ class Application(Frame):
                     
                     for material in product.materials:
                         if (product.quantity-amountToRemove > 0):
-                            newMat = (material.name, material.vendor, "$%f"%material.unitCost, (product.quantity-amountToRemove)*material.quantity)
+                            newMat = (material.name, material.vendor, "$%0.2f"%material.unitCost, (product.quantity-amountToRemove)*material.quantity)
                             self.materialTable.item(material.PK, values=newMat)
                         else:
                             self.materialTable.delete(material.PK)
@@ -179,7 +179,7 @@ class Application(Frame):
                 AdjustColumnWidths(self.productTable, self.productHeader, self.productColWidth, newProd)
                 
                 for mat in product.materials:
-                    newMat = (mat.name, mat.vendor, "$%f"%mat.unitCost, product.quantity*mat.quantity)
+                    newMat = (mat.name, mat.vendor, "$%0.2f"%mat.unitCost, product.quantity*mat.quantity)
                     if (self.materialTable.exists(mat.PK)):
                         self.materialTable.item(mat.PK, values=newMat)
                     else:
