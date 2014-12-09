@@ -30,7 +30,7 @@ class Product(object):
                 self.columnInfo[columnNames[i]] = columnValues[i]
                 
         #Remove this when Controller.AddProduct() is finished
-        self.AddMaterial(str(random.randint(0,1000)), "test", 5, "Albertsons", 5.0)
+        #self.AddMaterial(str(random.randint(0,1000)), "test", 5, "Albertsons", 5.0)
         #self.AddMaterial("5", "test", 5, "Albertsons", 500000)
         
         return success

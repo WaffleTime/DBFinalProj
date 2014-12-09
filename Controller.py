@@ -51,7 +51,7 @@ class Controller(object):
                             productIds.insert(i, row[0])
                             productNames.insert(i, productName)
                             break
-                        elif (i == len(productIds)):
+                        elif (i == len(productIds)-1):
                             productIds.append(row[0])
                             productNames.append(productName)
                             break
@@ -96,6 +96,7 @@ class Controller(object):
         cls.cursor.execute("SELECT * FROM Product_T WHERE ProductID='%s'"%(productPK))
         
         product = cls.GetProduct(productPK)
+        messages = []
         
         if (product == None):
             product = Product(quantity)
@@ -110,14 +111,51 @@ class Controller(object):
                 print("AddColumns failed within Controller.AddProduct!")
             
             #Query vendors and materials and add that info to the product.
-            #...
-            #...
-            #...
-            #...
-            #...
+            cls.cursor.execute("SELECT * FROM Uses_T WHERE ProductID='%s'"%(productPK))
             
-            cls.pendingProducts.append(product)
+            print("SELECT * FROM Uses_T WHERE ProductID='%s'"%(productPK))
+            
+            materialsNeeded = list(cls.cursor)
+            
+            #Sometimes there are products that don't even have listed materials. So we'll
+            #   just skip over those ones.
+            if (materialsNeeded != []):
+                for material in materialsNeeded:
+                    cls.cursor.execute("SELECT * FROM RawMaterial_T WHERE MaterialID='%s'"%(material[0]))
+                    materialResults = list(cls.cursor)
+                    
+                    if (materialResults != []):
+                        #There should be a single tuple within this list.
+                        materialResults = materialResults[0]
+                        
+                        product.AddMaterial(materialResults[0], materialResults[1], material[2], "Dunno", float(materialResults[6]))
+                    else:
+                        messages.append("Material, %s, doesn't exist within the RawMaterial_T table!")
+                        
+                if (product.materials != []):
+                    cls.pendingProducts.append(product)
+                else:
+                    messages.append("There were no materials found for product: %s-%s!"%(product.columnInfo["ProductDescription"], product.columnInfo["ProductFinish"]))
+                    product = None
+            else:
+                messages.append("There were no materials found for product: %s-%s!"%(product.columnInfo["ProductDescription"], product.columnInfo["ProductFinish"]))
+                product = None
         else:
             product.quantity += quantity
         
-        return product
+        return product, messages
+        
+    @classmethod
+    def SubmitProducts(cls):
+        """
+        This submits the pending products that have been selected by the user. This means that
+        the ProductsOnHand in the database within the Product_T table will be updated with the
+        amount of products that have been selected.
+        """
+        for product in cls.pendingProducts:
+            print("Adding %d to ProductID %s"%(product.quantity, product.PK))
+            cls.cursor.execute("UPDATE Product_T SET ProductOnHand=ProductOnHand+%d WHERE ProductID='%s'"%(product.quantity, product.PK))
+            
+        cls.cnx.commit()
+        print("Submition Complete!")
+        

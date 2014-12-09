@@ -1,4 +1,5 @@
 from tkinter import *
+from tkinter import messagebox
 import tkinter.font as tkFont
 from tkinter import ttk
 from Controller import Controller
@@ -207,35 +208,42 @@ class Application(Frame):
             """
             if (selectedProductVar.get() != "<Product>"):
                 indx = self.possibleProductNames.index(selectedProductVar.get())
-                product = Controller.AddProduct(self.possibleProductIds[indx], productNumber.get())
+                product, messages = Controller.AddProduct(self.possibleProductIds[indx], productNumber.get())
                 
-                newProd = (product.columnInfo["ProductDescription"], product.columnInfo["ProductFinish"], product.quantity)
+                #There are several possible messages we might get back after trying to add a product. Let's display those to the user first.
+                for msg in messages:
+                    messagebox.showwarning("Possible Problem", msg)
                 
-                #First check to see if the product and its materials exist already!
-                #There should only be 1 instance of each product and material in the tables.
-                if (self.productTable.exists(product.PK)):
-                    self.productTable.item(product.PK, values=newProd)
-                else:
-                    self.productTable.insert("", "end", iid=product.PK, values=newProd)
-                
-                AdjustColumnWidths(self.productTable, self.productHeader, self.productColWidth, newProd)
-                
-                for mat in product.materials:
-                    newMat = (mat.name, mat.vendor, "$%0.2f"%mat.unitCost, product.quantity*mat.quantity)
-                    if (self.materialTable.exists(mat.PK)):
-                        self.materialTable.item(mat.PK, values=newMat)
+                if (product != None):
+                    newProd = (product.columnInfo["ProductDescription"], product.columnInfo["ProductFinish"], product.quantity)
+                    
+                    #First check to see if the product and its materials exist already!
+                    #There should only be 1 instance of each product and material in the tables.
+                    if (self.productTable.exists(product.PK)):
+                        self.productTable.item(product.PK, values=newProd)
                     else:
-                        self.materialTable.insert("", "end", iid=mat.PK, values=newMat)
+                        self.productTable.insert("", "end", iid=product.PK, values=newProd)
                     
-                    AdjustColumnWidths(self.materialTable, self.materialHeader, self.materialColWidth, newMat)
+                    AdjustColumnWidths(self.productTable, self.productHeader, self.productColWidth, newProd)
                     
-                
-                sortby(self.productTable, self.productHeader[0], False)
-                sortby(self.materialTable, self.materialHeader[0], False)
+                    for mat in product.materials:
+                        newMat = (mat.name, mat.vendor, "$%0.2f"%mat.unitCost, product.quantity*mat.quantity)
+                        if (self.materialTable.exists(mat.PK)):
+                            self.materialTable.item(mat.PK, values=newMat)
+                        else:
+                            self.materialTable.insert("", "end", iid=mat.PK, values=newMat)
+                        
+                        AdjustColumnWidths(self.materialTable, self.materialHeader, self.materialColWidth, newMat)
+                        
+                    
+                    sortby(self.productTable, self.productHeader[0], False)
+                    sortby(self.materialTable, self.materialHeader[0], False)
             
             updateTotalCost()
             
         addProductBtn = ttk.Button(self, text="Add Product", command=addProduct)
+        
+        submitionBtn = ttk.Button(self, text="Submit Order", command=Controller.SubmitProducts)
         
         #Set up the widget's location in the GUI
         productLbl.grid(column=0, row=0, pady=10)
@@ -264,10 +272,12 @@ class Application(Frame):
         totalCostHdrLbl.grid(column=1, row=9, pady=10)
         totalCostLbl.grid(column=1, row=10)
         
+        submitionBtn.grid(column=3, row=10)
+        
         self.columnconfigure(0, minsize=120)
         self.columnconfigure(1, minsize=120)
         self.columnconfigure(2, minsize=120)
-        self.columnconfigure(3, minsize=120)
+        self.columnconfigure(3, minsize=220)
         
         updateTableHeader(self.productTable, self.productHeader, self.productColWidth)
         updateTableHeader(self.materialTable, self.materialHeader, self.materialColWidth)
