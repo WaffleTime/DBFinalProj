@@ -40,10 +40,21 @@ class Product(object):
         for mat in self.materials:
             if (str(mat.PK) == str(PK)):
                 material = mat
+                break
                 
         return material
                 
     def AddMaterial(self, PK, name, quantity, vendor, unitCost):
+        """
+        This will add a material to this Product's list of materials. If the material already exists,
+        then its quantity will be added to the first material object.
+        @param PK           The primary key (string) for the material in the database.
+        @param name         A string representing the name of the material.
+        @param quantity     An integer representing the amount of <some material> needed for a single one of this product.
+                                The material's quantity will be static and won't be changed along with the Product's quantity!
+        @param vendor       A string representing the name of the vendor that supplies this material.
+        @param unitCost     The cost for a single one of this material. A float or integer is assumed.
+        """
         material = self.GetMaterial(PK)
         if (material == None):
             self.materials.append(Material(PK, name, quantity, vendor, unitCost))

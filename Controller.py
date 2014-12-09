@@ -28,6 +28,12 @@ class Controller(object):
 
     @classmethod
     def GetPossibleProducts(cls):
+        """
+        Fetches a list of the Products that this company is able to sell.
+        @return
+            A list of primary keys for the products and a list of names for the products. 
+            (Maybe a dictionary would have been better to use... whatever.)
+        """
         cls.cursor.execute("SELECT * FROM Product_T")
         
         productIds      = []

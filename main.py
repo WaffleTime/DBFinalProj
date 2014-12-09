@@ -27,12 +27,26 @@ def sortby(tree, col, descending):
         int(not descending)))
         
 def updateTableHeader(table, header, colWidths):
+    """
+    This just updates the names of the headers for the given table.
+    @param table A TreeView object for the table that we're updating.
+    @param header A list of strings for the header names of each column.
+    @param colWidths A list of numbers that identify the current width of each column.
+    """
     for i in range(len(header)):
         table.heading(header[i], text=header[i].title(), command=lambda c=header[i]: sortby(table, c, 0))
         table.column(header[i], width=tkFont.Font().measure(header[i].title()))
         colWidths[i] = tkFont.Font().measure(header[i].title())
         
 def AdjustColumnWidths(table, header, colWidths, newItem):
+    """
+    This looks at an item that is being added to a table and if the new item is too large for
+    the current column width, the columns will be adjusted.
+    @param table A TreeView object for the table that we're updating.
+    @param header A list of strings for the header names of each column.
+    @param colWidths A list of numbers that identify the current width of each column.
+    @param newItem  The item that's being added to the table.
+    """
     for ix, val in enumerate(newItem):
         col_w = tkFont.Font().measure(val)
         if (colWidths[ix] < col_w):
@@ -56,12 +70,16 @@ class Application(Frame):
         self.master.grid_columnconfigure(0,weight=1)
         self.master.grid_rowconfigure(0,weight=1)
         
+        
+        #Vars for the product table
         self.productTable = None
         self.productHeader = ["name", "finish", "quantity"]
         self.productColWidth = [0, 0, 0]
         
+        #The primary keys and product names that will be used with the dropdown box.
         self.possibleProductIds, self.possibleProductNames = Controller.GetPossibleProducts()
         
+        #Vars for the material table
         self.materialTable = None
         self.materialHeader = ["name", "vendor", "unit cost", "quantity"]
         self.materialColWidth = [0, 0, 0, 0]
@@ -70,7 +88,13 @@ class Application(Frame):
         self.createWidgets()
 
     def createWidgets(self):
+        """
+        This creates all of the widgets for the gui and places them in the correct spots.
+        """
         #Create all of the widgets that we will be using.
+        
+        
+        #These widgets are for the product table.
         productLbl = ttk.Label(self, text="Products")
         
         self.productTable = ttk.Treeview(self, columns=self.productHeader, show="headings")
@@ -79,6 +103,7 @@ class Application(Frame):
         self.productTable.configure(yscrollcommand=prodvsb.set, xscrollcommand=prodhsb.set)
         
         
+        #This will display the total cost of all the materials selected.
         totalCostHdrLbl = ttk.Label(self, text="Total Cost of Materials")
         totalCostLbl = ttk.Label(self, text="$0.00")
         
@@ -87,6 +112,10 @@ class Application(Frame):
         productNumber.set(1)
         
         def updateTotalCost():
+            """
+            This is used to update the total cost of the materials that are currently in 
+            the materials table and show that number to the user.
+            """
             totalCost = 0.0
             for prodiid in self.productTable.get_children():
                 product = Controller.GetProduct(prodiid)
@@ -97,6 +126,9 @@ class Application(Frame):
             totalCostLbl["text"] = "$%0.2f"%(totalCost)
         
         def removeProduct(*args):
+            """
+            This will remove all of the products that are selected in the product table.
+            """
             selitems = self.productTable.selection()
             
             #This is how many of each product we'll be removing!
@@ -135,16 +167,19 @@ class Application(Frame):
                 
             updateTotalCost()
         
+        #These buttons are used to remove selected products in the product table
         removeProductBtn = ttk.Button(self, text="Remove Product", command=removeProduct)
         removeAllProductsBtn = ttk.Button(self, text="Remove All Products", command=removeAllProducts)
         
+        #The material table's widgets.
         materialLbl = ttk.Label(self, text="Materials")
-        self.materialTable = ttk.Treeview(self, columns=self.materialHeader, show="headings")
+        self.materialTable = ttk.Treeview(self, columns=self.materialHeader, show="headings", selectmode="none")
         matvsb = ttk.Scrollbar(self, orient="vertical", command=self.materialTable.yview)
         mathsb = ttk.Scrollbar(self, orient="horizontal", command=self.materialTable.xview)
         self.materialTable.configure(yscrollcommand=matvsb.set, xscrollcommand=mathsb.set)
         
         quitBtn = ttk.Button(self, text="QUIT", command=self.master.destroy)
+        
         
         dropdownLbl = ttk.Label(self, text="Select a Product to Add!")
         
@@ -155,6 +190,9 @@ class Application(Frame):
         productNumberHeaderLbl = ttk.Label(self, text="Change the Number of Products to Add/Remove!")
         
         def intOnly(*args):
+            """
+            This makes sure the slider only is setting productNumber to an integer value.
+            """
             productNumber.set(round(productNumber.get()))
         
         productNumberSlider = ttk.Scale(self, orient=HORIZONTAL, length=300, from_=1.0, to=50.0, variable=productNumber, command=intOnly)
@@ -163,6 +201,10 @@ class Application(Frame):
         productNumberLbl["text"] = 1
         
         def addProduct(*args):
+            """
+            This adds the currently selected product using information from a database that is fetched by the Controller class
+            and then stored in Product and Material objects.
+            """
             if (selectedProductVar.get() != "<Product>"):
                 indx = self.possibleProductNames.index(selectedProductVar.get())
                 product = Controller.AddProduct(self.possibleProductIds[indx], productNumber.get())
@@ -237,5 +279,3 @@ def main():
     Controller.TearDown()
     
 main()
-
-
