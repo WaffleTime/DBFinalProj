@@ -113,8 +113,6 @@ class Controller(object):
             #Query vendors and materials and add that info to the product.
             cls.cursor.execute("SELECT * FROM Uses_T WHERE ProductID='%s'"%(productPK))
             
-            print("SELECT * FROM Uses_T WHERE ProductID='%s'"%(productPK))
-            
             materialsNeeded = list(cls.cursor)
             
             #Sometimes there are products that don't even have listed materials. So we'll
